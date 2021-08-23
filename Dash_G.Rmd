@@ -1,0 +1,1121 @@
+---
+title: "P&G, Modelo de pronóstico - Clicks"
+date: "Mayo 2019"
+output: 
+  flexdashboard::flex_dashboard:
+    highlight: haddock
+    logo: logo.jpg
+    
+---
+
+
+
+Clicks {data-navmenu="Facebook"}
+===============================================
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### Comentarios
+
+La gráfica presentada aquí muestra cómo los clicks han ido aumentado de forma significativa hasta la fecha. En resumen, la marca ha quintuplicado su performance inicial, aparte que ahora tiene una presencia digital más que constante. Durante este resumen empezamos a mostrar la construcción del Quality Score. Las gráficas para su fácil comprensión tienen una transformación Box - Cox.
+
+
+Column {data-width=800}
+-----------------------------------------------------------------------
+
+### Graph
+
+```{r, echo=FALSE}
+library(tidyverse)
+library(reshape2)
+library(ggthemes)
+library(ggrepel)
+library(RColorBrewer)
+library(ChannelAttribution)
+library(markovchain)
+library(visNetwork)
+library(expm)
+library(stringr)
+library(purrrlyr)
+library(dplyr)
+library(stringr)
+library(expm)
+#library(xlsx)
+library(openxlsx)
+library(readxl)
+library(kableExtra)
+library(plotly)
+library(car)
+
+setwd("C:/Users/juliana.forero/Desktop/PG")
+
+conv = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+
+conv1 <- conv %>% filter(Gender!= 'unknown')
+
+conv$Gender <- as.factor(conv$Gender)
+conv$Age <- as.factor(conv$Age)
+conv$Ad_name <- as.factor(conv$Ad_name)
+conv$Impressions <- as.numeric(conv$Impressions)
+conv$clicks <- as.numeric(conv$clicks)
+conv$Cost <- as.numeric(conv$Cost)
+conv$Reach <- as.numeric(conv$Reach)
+conv$Estrategy <- as.factor(conv$Estrategy)
+conv$Format <- as.factor(conv$Format)
+conv$Comunication <- as.factor(conv$Comunication)
+conv$Audience <- as.factor(conv$Audience)
+
+
+can=conv %>% group_by(Date) %>% summarise(clicks=sum(clicks))
+
+
+ca=ggplot(can, aes(x=Date,y=clicks, fill=Date)) + labs(x="Date",y="Número de clicks",title="Clicks Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+theme(legend.position = 'none')
+
+
+ggplotly(ca)
+
+```
+
+Clicks-género {data-navmenu="Facebook"}
+===============================================
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### Comentarios
+
+Cuando empezamos a añadir variables de audiencias nos empezamos a dar cuenta que existe una preponderancia del público femenino. Es decir podemos a pensar sobre qué dimensiones utilizar para construir las variables de scoring.
+
+Column {data-width=800}
+-----------------------------------------------------------------------
+
+### Graph
+
+```{r, echo=FALSE}
+
+can=conv1 %>% group_by(Date,Gender) %>% summarise(clicks=sum(clicks))
+
+
+ca=ggplot(can, aes(x=Date,y=clicks, fill=Gender)) + labs(x="Date",y="Número de clicks",title="Clicks Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()
+
+
+ggplotly(ca)
+
+```
+
+
+Clicks-edad {data-navmenu="Facebook"}
+===============================================
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### Comentarios
+
+Asimismo, vemos que existen edades que son más reactivas a las activaciones digitales del producto. Digitalmente el grueso de los clicks viene del segmento entre 35 a 54 años. De nuevo expresandonos gráficamente la dirección sobre qué características permiten predecir sensibilidad a las ejecuciones de medios.
+
+Column {data-width=800}
+-----------------------------------------------------------------------
+
+### Graph
+
+```{r, echo=FALSE}
+
+can=conv %>% group_by(Date,Age) %>% summarise(clicks=sum(clicks))
+
+
+ca=ggplot(can, aes(x=Date,y=clicks, fill=Age)) + labs(x="Date",y="Número de clicks",title="Clicks Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()
+
+
+ggplotly(ca)
+
+```
+
+Costo {data-navmenu="Facebook"}
+===============================================
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### Comentarios
+
+También en función de costos se puede ver cómo a medida que vamos invirtiendo más en las campañas el número de clicks crece de forma lineal. Todavía sigue creciendo entonces no hemos alcanzado el punto de equilibrio máximo! dentro del medio.
+
+Column {data-width=800}
+-----------------------------------------------------------------------
+
+### Graph
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~Cost, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del costo')
+p
+
+```
+
+
+Reach {data-navmenu="Facebook"}
+===============================================
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~Reach, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del Reach');p
+```
+
+CR {data-navmenu="Facebook"}
+===============================================
+
+Column {.tabset}
+------------------------------------------------------
+
+### Histórico
+
+```{r, echo=FALSE}
+
+mes=conv %>% group_by(Date)  %>% summarise(clicks=sum(clicks),
+                                                 Impressions=sum(Impressions),
+                                                 reach=sum(Reach), 
+                                      CTR=(clicks/Impressions)*100,CR=(reach/Impressions)*100)
+
+
+mess=ggplot(mes,aes(x=Date,y=CR,fill=Date))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="Date",y="CR",title="CR")+theme(legend.position = 'none')
+
+ggplotly(mess)
+
+#ca=ggplot(df, aes(x=Date,y=clicks, fill=CR)) + labs(x="Date",y="Número de clicks",title="Clicks por CR, Marzo - Mayo 2019")+
+ # geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+#ggplotly(ca)
+
+```
+
+
+
+### Género
+
+```{r, echo=FALSE}
+
+
+mes=conv %>% group_by(Date, Gender)  %>% summarise(clicks=sum(clicks),
+                                                 Impressions=sum(Impressions),
+                                                 reach=sum(Reach), 
+                                      CTR=(clicks/Impressions)*100,CR=(reach/Impressions)*100)
+
+
+mess=ggplot(mes,aes(x=Date,y=CR,fill=Gender))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="Date",y="CR",title="CR")+theme(legend.position = 'none')
+
+ggplotly(mess)
+
+```
+
+
+### Edad
+
+```{r, echo=FALSE}
+
+
+mes=conv %>% group_by(Date, Age)  %>% summarise(clicks=sum(clicks),
+                                                 Impressions=sum(Impressions),
+                                                 reach=sum(Reach), 
+                                      CTR=(clicks/Impressions)*100,CR=(reach/Impressions)*100)
+
+
+mess=ggplot(mes,aes(x=Date,y=CR,fill=Age))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="Date",y="CR",title="CR")+theme(legend.position = 'none')
+
+ggplotly(mess)
+
+```
+
+
+
+### Reach vs. Impressions
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~Impressions, y = ~Reach, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Alcance en función de las impresiones');p
+```
+
+
+### CR por Estrategia
+
+```{r, echo=FALSE}
+
+p<-ggplot(conv, aes(x=Estrategy, y=CR, color=Estrategy)) + geom_boxplot()+ labs(title="CR por tipo de estrategia")+coord_flip()+theme(legend.position = 'none')
+ggplotly(p)
+
+```
+
+### CR por Audiencia
+
+```{r, echo=FALSE}
+
+p<-ggplot(conv, aes(x=Audience, y=CR, color=Audience)) + geom_boxplot()+ labs(title="CR por tipo de audiencia")+coord_flip()+theme(legend.position = 'none')
+ggplotly(p)
+
+```
+
+### CR por Comunicación
+
+```{r, echo=FALSE}
+
+p<-ggplot(conv, aes(x=Comunication, y=CR, color=Comunication)) + geom_boxplot()+ labs(title="CR por tipo de comunicación")+coord_flip()+theme(legend.position = 'none')
+ggplotly(p)
+
+```
+
+### CR por Formato
+
+```{r, echo=FALSE}
+
+p<-ggplot(conv, aes(x=Format, y=CR, color=Format)) + geom_boxplot()+ labs(title="CR por tipo de formato")+coord_flip()+theme(legend.position = 'none')
+ggplotly(p)
+
+```
+
+### Comentarios
+
+Los formatos que más clicks atrajeron fueron "linkad1imagen" y "linkad1gif" desde el mes de Marzo hasta los primeros días de Abril tanto para mujeres como hombres y así para todos los rangos de edad, para finales del mes de mayo el formato "linkad6gif" fue el que más clicks atrajo.
+
+
+CTR {data-navmenu="Facebook"}
+===============================================
+
+Column {.tabset}
+------------------------------------------------------
+
+
+### Histórico
+
+```{r, echo=FALSE}
+
+mes=conv %>% group_by(Date)  %>% summarise(clicks=sum(clicks),
+                                                 Impressions=sum(Impressions),
+                                                 reach=sum(Reach), 
+                                      CTR=(clicks/Impressions)*100,CR=(reach/Impressions)*100)
+
+
+mess=ggplot(mes,aes(x=Date,y=CTR,fill=Date))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="Date",y="CTR",title="CTR")+theme(legend.position = 'none')
+
+ggplotly(mess)
+
+#ca=ggplot(df, aes(x=Date,y=clicks, fill=CR)) + labs(x="Date",y="Número de clicks",title="Clicks por CR, Marzo - Mayo 2019")+
+ # geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+#ggplotly(ca)
+
+```
+
+
+
+### Género
+
+```{r, echo=FALSE}
+
+
+mes=conv %>% group_by(Date, Gender)  %>% summarise(clicks=sum(clicks),
+                                                 Impressions=sum(Impressions),
+                                                 reach=sum(Reach), 
+                                      CTR=(clicks/Impressions)*100,CR=(reach/Impressions)*100)
+
+
+mess=ggplot(mes,aes(x=Date,y=CTR,fill=Gender))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="Date",y="CTR",title="CTR")+theme(legend.position = 'none')
+
+ggplotly(mess)
+
+```
+
+
+### Edad
+
+```{r, echo=FALSE}
+
+
+mes=conv %>% group_by(Date, Age)  %>% summarise(clicks=sum(clicks),
+                                                 Impressions=sum(Impressions),
+                                                 reach=sum(Reach), 
+                                      CTR=(clicks/Impressions)*100,CR=(reach/Impressions)*100)
+
+
+mess=ggplot(mes,aes(x=Date,y=CTR,fill=Age))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="Date",y="CTR",title="CTR")+theme(legend.position = 'none')
+
+ggplotly(mess)
+
+```
+
+
+### Clicks vs. Impresiones
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~Impressions, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función de las impresiones');p
+
+```
+
+### CTR por Estrategia
+
+```{r, echo=FALSE}
+
+p<-ggplot(conv, aes(x=Estrategy, y=CTR, color=Estrategy)) + geom_boxplot()+ labs(title="CTR por tipo de estrategia")+coord_flip()+theme(legend.position = 'none')
+ggplotly(p)
+
+```
+
+### CTR por Audiencia
+
+```{r, echo=FALSE}
+
+p<-ggplot(conv, aes(x=Audience, y=CTR, color=Audience)) + geom_boxplot()+ labs(title="CTR por tipo de audiencia")+coord_flip()+theme(legend.position = 'none')
+ggplotly(p)
+
+```
+
+### CTR por Comunicación
+
+```{r, echo=FALSE}
+
+p<-ggplot(conv, aes(x=Comunication, y=CTR, color=Comunication)) + geom_boxplot()+ labs(title="CTR por tipo de comunicación")+coord_flip()+theme(legend.position = 'none')
+ggplotly(p)
+
+```
+
+### CTR por Formato
+
+```{r, echo=FALSE}
+
+p<-ggplot(conv, aes(x=Format, y=CTR, color=Format)) + geom_boxplot()+ labs(title="CTR por tipo de formato")+coord_flip()+theme(legend.position = 'none')
+ggplotly(p)
+
+```
+
+### Comentarios
+
+Los formatos que más clicks atrajeron fueron "linkad1imagen" y "linkad1gif" desde el mes de Marzo hasta los primeros días de Abril tanto para mujeres como hombres y así para todos los rangos de edad, para finales del mes de mayo el formato "linkad6gif" fue el que más clicks atrajo.
+
+Impresiones {data-navmenu="Facebook"}
+===============================================
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~Impressions, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función de las Impresiones ');p
+```
+
+ 
+Género {data-navmenu="Facebook"}
+===============================================
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### Comentarios
+
+Comparando todos los días nos damos cuenta que en general existen diferencias significativas de acuerdo al género. En general se consiguen más clicks cuando se impactan mujeres, por lo tanto tienen un mayor puntaje de propensidad.
+
+Column {data-width=800}
+-----------------------------------------------------------------------
+
+### Graph
+
+```{r, echo=FALSE}
+
+p<-ggplot(conv1, aes(x=Gender, y=clicks, color=Gender)) + geom_boxplot()+ labs(title="Clicks por Género")+ theme_minimal()
+ggplotly(p)
+
+```
+
+ 
+Edad {data-navmenu="Facebook"}
+===============================================
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### Comentarios
+
+Cómo en un panel anterior se expuso cómo se daba la propensidad de acuerdo a la edad. En este panel queda mucho más claro cómo existe un grupo etario que es mucho más sensible a la ejecución de pauta.
+
+
+Column {data-width=800}
+-----------------------------------------------------------------------
+
+### Graph
+
+```{r, echo=FALSE}
+p<-ggplot(conv, aes(x=Age, y=clicks, color=Age)) + geom_boxplot()+ labs(title="Clicks por Edad")+theme_minimal()
+ggplotly(p)
+```
+
+
+Género y edad {data-navmenu="Facebook"}
+===============================================
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### Comentarios
+
+En este caso se ve mejor la interacción sobre cómo distintas audiencias con distintos puntajes de propensidad interactúan en este caso señalando que existe una relación de mediación. Aquí se ve cómo las mujeres del grupo etario entre los 35 a los 44 son incluso más sensibles que el resto.
+
+
+Column {data-width=800}
+-----------------------------------------------------------------------
+
+### Graph
+
+```{r, echo=FALSE}
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Age, Gender) %>% summarise(clicks=sum(clicks))
+
+
+ca=ggplot(df, aes(x=Age,y=clicks, fill=Gender)) + labs(x="Edad",y="Número de clicks",title="Clicks por género y edad")+
+  geom_bar(stat="identity")+theme_minimal()
+
+
+ggplotly(ca)
+```
+
+
+Estrategia {data-navmenu="Facebook"}
+===============================================
+
+Column {.tabset}
+------------------------------------------------------
+
+
+
+### Histórico
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Date, Estrategy) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Date,y=clicks, fill=Estrategy)) + labs(x="Date",y="Número de clicks",title="Clicks por tipo de estrategia, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+
+
+### Género
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Estrategy,Gender) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Gender,y=clicks, fill=Estrategy)) + labs(x="Género",y="Número de clicks",title="Clicks por tipo de estrategia y género, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+
+### Edad
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Estrategy,Age) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Age,y=clicks, fill=Estrategy)) + labs(x="Edad",y="Número de clicks",title="Clicks por tipo de estrategia y género, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+### Comentarios
+
+A partir del histórico de clicks se observa como la conversión se da desde finales del mes de abril y hasta el mes de mayo. La estrategia Awareness es la que más cantidad de clicks atrajo.
+
+
+Audiencia {data-navmenu="Facebook"}
+===============================================
+
+Column {.tabset}
+------------------------------------------------------
+
+
+
+### Histórico
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Date, Audience) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Date,y=clicks, fill=Audience)) + labs(x="Date",y="Número de clicks",title="Clicks por tipo de audiencia, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+
+
+### Género
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Audience,Gender) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Gender,y=clicks, fill=Audience)) + labs(x="Género",y="Número de clicks",title="Clicks por tipo de audiencia y género, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+
+### Edad
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Audience,Age) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Age,y=clicks, fill=Audience)) + labs(x="Edad",y="Número de clicks",title="Clicks por tipo de audiencia y género, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+
+### Comentarios
+
+En el mes de abril la audiencia que trajo más clicks fue la de "eld". Para el mes de mayo la audiencia "plc" fue la que más clicks atrajo. Tanto para hombres como mujeres la audiencia con mayor número de clicks fue "plc"; sin embargo para los hombres la audiencia más popular seguida de plc fue "nc".
+
+Para las personas entre los 18 y los 24 años la audiencia que trajo más clicks fue "nc", mientras que para las personas entre los 25 y los 34 años la audiencia que más atrajo clicks fue "ma", para los que están dentro del rango de edad de los 35 y los 54 años la audiencia que más atrajo clicks fue "plc", para las personas mayores de 55 años la audiencia qeu más atrajo clicks fue "eld".
+
+
+
+Comunicación {data-navmenu="Facebook"}
+===============================================
+
+Column {.tabset}
+------------------------------------------------------
+
+
+
+### Histórico
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Date, Comunication) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Date,y=clicks, fill=Comunication)) + labs(x="Date",y="Número de clicks",title="Clicks por tipo de comunicación, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+
+
+### Género
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Comunication,Gender) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Gender,y=clicks, fill=Comunication)) + labs(x="Género",y="Número de clicks",title="Clicks por tipo de comunicación y género, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+
+### Edad
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Comunication,Age) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Age,y=clicks, fill=Comunication)) + labs(x="Edad",y="Número de clicks",title="Clicks por tipo de comunicación y género, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+
+### Comentarios
+
+La comunicación directa y emocional fueron las más frecuentes dentro del período de tiempo estudiado tanto para hombres como para mujeres; así mismo desde los 18 años en adelante los 2 tipos de comunicación "dir" y "emo" son los más frecuentes. 
+
+
+Formato {data-navmenu="Facebook"}
+===============================================
+
+
+Column {.tabset}
+------------------------------------------------------
+
+
+
+### Histórico
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Date, Format) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Date,y=clicks, fill=Format)) + labs(x="Date",y="Número de clicks",title="Clicks por tipo de formato, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+
+
+### Género
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Format,Gender) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Gender,y=clicks, fill=Format)) + labs(x="Género",y="Número de clicks",title="Clicks por tipo de formato y género, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+
+### Edad
+
+```{r, echo=FALSE}
+
+
+df = read_excel("fb_PG_1.xlsx", sheet = 3) %>%  tbl_df()
+#names(df)
+df<- df %>% group_by(Format,Age) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(df, aes(x=Age,y=clicks, fill=Format)) + labs(x="Edad",y="Número de clicks",title="Clicks por tipo de formato y género, Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+scale_y_continuous(labels = scales::comma)
+
+
+ggplotly(ca)
+
+```
+
+
+### Comentarios
+
+Los formatos que más clicks atrajeron fueron "linkad1imagen" y "linkad1gif" desde el mes de Marzo hasta los primeros días de Abril tanto para mujeres como hombres y así para todos los rangos de edad, para finales del mes de mayo el formato "linkad6gif" fue el que más clicks atrajo.
+
+
+
+
+
+Mediamath 
+===============================================
+
+Column {.tabset}
+------------------------------------------------------
+
+### Clicks
+
+```{r, echo=FALSE}
+
+conv = read_excel("Mediamath.xlsx", sheet = 1) %>%  tbl_df()
+
+
+conv$campaign_name <- as.factor(conv$campaign_name)
+conv$strategy_name <- as.factor(conv$strategy_name)
+conv$impressions <- as.numeric(conv$impressions)
+conv$clicks <- as.numeric(conv$clicks)
+conv$total_conversions <- as.numeric(conv$total_conversions)
+conv$total_spend <- as.numeric(conv$total_spend)
+conv$total_spend_cpm <- as.numeric(conv$total_spend_cpm)
+conv$total_spend_cpa <- as.numeric(conv$total_spend_cpa)
+conv$total_spend_cpc <- as.numeric(conv$total_spend_cpc)
+conv$ctc <- as.numeric(conv$ctc)
+conv$ctr <- as.numeric(conv$ctr)
+
+
+#daily_data = read.csv('day.csv', header=TRUE, stringsAsFactors=FALSE)
+#conv$Date = as.Date(conv$start_date)
+
+#ggplot(conv, aes(Date, clicks)) + geom_line() + scale_x_date('month')  + ylab("Daily Bike Checkouts") +
+ # xlab("")
+
+
+can=conv %>% group_by(start_date) %>% summarise(clicks=sum(clicks))
+
+
+ca=ggplot(can, aes(x=start_date,y=clicks, fill=start_date)) + labs(x="Date",y="Número de clicks",title="Clicks Abril - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+theme(legend.position = 'none')
+
+
+ggplotly(ca)
+
+```
+
+
+### Clicks-campaña
+
+
+
+```{r, echo=FALSE}
+
+conv = read_excel("Mediamath.xlsx", sheet = 1) %>%  tbl_df()
+
+
+can=conv %>% group_by(start_date,campaign_name) %>% summarise(clicks=sum(clicks))
+
+
+ca=ggplot(can, aes(x=start_date,y=clicks, fill=campaign_name)) + labs(x="Date",y="Número de clicks",title="Clicks Abril - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()
+
+
+ggplotly(ca)
+
+```
+
+### Costo
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~total_spend, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del costo');p
+
+```
+
+### Conversiones
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~total_conversions, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función de las conversiones');p
+```
+
+### Impresiones
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~impressions, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función de las Impresiones ');p
+```
+
+### Gasto-cpm
+
+```{r, echo=FALSE}
+
+p <- plot_ly(data = conv, x = ~total_spend_cpm, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del costo de cpm');p
+
+```
+
+### Gasto-cpa
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~total_spend_cpa, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del costo de cpa');p
+```
+
+### Gasto-cpc
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~total_spend_cpc, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del costo de cpc');p
+```
+
+### ctc
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~ctc, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del ctc');p
+```
+
+### ctr
+
+```{r, echo=FALSE}
+p <- plot_ly(data = conv, x = ~ctr, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del ctr');p
+```
+
+### Campaña
+
+```{r, echo=FALSE}
+p<-ggplot(conv, aes(x=campaign_name, y=clicks, color=campaign_name)) + geom_boxplot()+ labs(title="Clicks por tipo de campaña")+theme_minimal()
+ggplotly(p)
+```
+
+### clicks por Estrategia
+
+```{r, echo=FALSE}
+p<-ggplot(conv, aes(x=strategy_name, y=clicks, color=strategy_name)) + geom_boxplot()+ labs(title="Clicks por tipo de estrategia")+coord_flip()+theme_minimal()+theme(legend.position = 'none')
+ggplotly(p)
+```
+
+### CTR por Estrategia
+
+```{r, echo=FALSE}
+
+p<-ggplot(conv, aes(x=strategy_name, y=ctr, color=strategy_name)) + geom_boxplot()+ labs(title="CTR por tipo de estrategia")+coord_flip()+theme(legend.position = 'none')
+ggplotly(p)
+
+```
+
+
+
+Fb - Mediamath 
+===============================================
+
+Column {.tabset}
+------------------------------------------------------
+
+### Histórico: Clicks
+
+```{r, echo=FALSE}
+require(flexdashboard);require(readxl);require(dplyr);require(stats);require(lubridate);require(knitr);require(plotly);require(MASS);require(DT);require(writexl)
+
+Data1 = read_excel("base.xlsx", sheet = 2) %>%  tbl_df()
+
+
+Data1$start_date = as.Date(Data1$start_date)
+Data = Data1 %>% group_by(start_date,Channel) %>% summarise(Impressions=sum(impressions,na.rm=T),clicks=sum(clicks,na.rm=T),Conversions=sum(total_conversions,na.rm=T),Cost=sum(total_spend,na.rm=T))
+
+can=Data1 %>% group_by(start_date,Channel) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(can, aes(x=start_date,y=clicks, fill=Channel)) + labs(x="Fecha",y="Número de clicks",title="Clicks Marzo - Mayo 2019")+
+  geom_area(stat ="identity", alpha=0.6) +
+  theme_classic()
+
+ggplotly(ca)
+
+```
+
+### Gasto total 
+
+```{r, echo=FALSE, warning=FALSE}
+
+can=Data1 %>% group_by(start_date,Channel) %>% summarise(total_spend=sum(total_spend))
+
+
+ca=ggplot(can, aes(x=start_date,y=total_spend, fill=Channel)) + labs(x="Fecha",y="Gasto",title="Gasto total Marzo - Mayo 2019")+
+  geom_area(stat ="identity", alpha=0.6) +theme_minimal()
+
+ggplotly(ca)
+
+```
+
+### Impresiones
+
+```{r, echo=FALSE, warning=FALSE}
+
+can=Data1 %>% group_by(start_date,Channel) %>% summarise(impressions=sum(impressions))
+
+
+ca=ggplot(can, aes(x=start_date,y=impressions, fill=Channel)) + labs(x="Fecha",y="Impresiones",title="Impresiones Marzo - Mayo 2019")+
+  geom_area(stat ="identity", alpha=0.6) +theme_minimal()+
+  scale_y_continuous(labels = scales::comma)
+
+ggplotly(ca)
+
+```
+
+
+### Clicks-Gasto
+
+```{r, echo=FALSE, warning=FALSE}
+
+plot_ly(Data1, x = ~total_spend, color = ~Channel) %>%
+  add_markers(y = ~clicks, text = ~ start_date) %>%
+  layout(title = 'Clicks en función del costo')
+```
+
+### Impresiones-Gasto
+
+```{r, echo=FALSE, warning=FALSE}
+
+plot_ly(Data1, x = ~total_spend, color = ~Channel) %>%
+  add_markers(y = ~impressions, text = ~ start_date) %>%
+  layout(title = 'Impresiones en función del costo')
+
+```
+
+
+
+
+
+
+
+```{r setup, include=FALSE}
+require(flexdashboard);require(readxl);require(dplyr);require(stats);require(lubridate);require(knitr);require(plotly);require(MASS);require(DT);require(writexl)
+
+Data = read_excel("base.xlsx", sheet = 2) %>%  tbl_df()
+
+
+Data$start_date = as.Date(Data$start_date)
+Data = Data %>% group_by(start_date,Channel) %>% summarise(Impressions=sum(impressions,na.rm=T),clicks=sum(clicks,na.rm=T),Conversions=sum(total_conversions,na.rm=T),Cost=sum(total_spend,na.rm=T))
+```
+
+
+Modelo lineal {data-navmenu="Modelo"}
+===============================================
+
+Column 
+-----------------------------------------------------------------------
+
+
+###Especificación del modelo de regresión lineal
+
+$$\begin{equation*}
+\left\lbrace
+\begin{array}{l}
+y_k^\hat{\lambda} = \mu_k + \epsilon_k\\
+\mu_k = \beta_1 x_{k1} + \beta_2 x_{k2} + \beta_3 x_{k3} + \beta_4 x_{k1} x_{k2} + \beta_5 x_{k1} x_{k3}\\
+\epsilon_k \sim N(0,\sigma^2)\\
+\epsilon_1,...., \epsilon_n  \textit{ independientes}
+\end{array}
+\right.
+\end{equation*}$$
+
+$$ Y_k: \textit{clicks del k-esimo dia }\\
+\hat{\lambda}:\textit{ transformacion de Box Cox}\\
+X_{k1}: \textit{ Gasto en el dia k}\\
+X_{k2}: \left\lbrace
+\begin{array}{l}
+1 \textit{ Si el medio del dia k es Mediamath}\\
+0 \textit{ en otro caso}\\
+\end{array}
+\right. \\
+X_{k3} \left\lbrace
+\begin{array}{l}
+1 \textit{ Si el medio del dia k es Facebook}\\
+0 \textit{ en otro caso}\\
+\end{array}
+\right. \\ $$
+
+
+
+```{r, include=FALSE}
+
+fitC=lm(Data[-which(Data$clicks==0),],formula=clicks~-1+Cost+Channel+Cost*Channel)
+boxcox(fitC) -> bc
+bcC <- bc$x[which.max(bc$y)]
+fitC=lm(Data,formula=clicks^bcC~-1+Cost+Channel+Cost*Channel)
+#kable(summary(fitC)$coefficients)
+#summary(fitC)
+
+```
+
+Column 
+-----------------------------------------------------------------------
+
+###Estimación del modelo, R^2 = 0.9912
+
+```{r, echo=FALSE}
+summary(fitC)
+```
+
+
+Gráficos {data-navmenu="Modelo"}
+===============================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+###Modelo e intervalos de predicción
+
+```{r}
+PredC = predict(fitC,interval = 'confidence',level = 0.99)
+colnames(PredC) = paste(colnames(PredC),'C',sep='')
+Data=cbind(data.frame(Data),data.frame(PredC))
+
+plot_ly(Data, x = ~Cost, color = ~Channel) %>%
+  add_markers(y = ~clicks^bcC, text = ~ start_date) %>% 
+  add_lines(y = ~ fitC,name = "Estimated",line = list(color = 'black')) %>%
+  add_ribbons(ymin = ~lwrC,
+              ymax = ~uprC,
+              line = list(color = 'rgba(7, 164, 181, 0.05)'),
+              fillcolor = 'rgba(7, 164, 181, 0.2)',
+              name = "Standard Error", showlegend = T)
+
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+###Histórico
+
+```{r}
+plot_ly(Data, x = ~start_date, color = ~Channel) %>%
+  add_lines(y = ~clicks, text = ~ start_date) %>% 
+  add_ribbons(ymin = ~lwrC^(bcC^-1),
+              ymax = ~uprC^(bcC^-1),
+              line = list(color = 'rgba(7, 164, 181, 0.05)'),
+              fillcolor = 'rgba(7, 164, 181, 0.2)',
+              name = "Standard Error", showlegend = T) 
+```
+
+
+

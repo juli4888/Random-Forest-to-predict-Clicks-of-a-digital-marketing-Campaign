@@ -1,0 +1,990 @@
+---
+title: "Febreze (Mar-Jun)"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    logo: logo.jpg
+
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(readxl)
+library(ggplot2)
+library(plotly)
+library(knitr)
+library(d3heatmap)
+library(dplyr)
+
+df = read_excel("base_heatmaps.xlsx", sheet = 4)
+
+```
+
+
+Historico {data-navmenu="Add to cart-Medio"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+can=df %>% group_by(Date, Source) %>% summarise(n=sum(Add_to_cart))
+
+
+ca=ggplot(can, aes(x=Date,y=n, fill=Source)) + labs(x="Date",y="N?mero de add to cart",title="Add to cart Mar - Jun 2019")+
+  geom_bar(stat="identity")+theme_minimal()
+
+
+ggplotly(ca)
+
+```
+
+
+
+Mes {data-navmenu="Add to cart-Medio"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(Month,Source) %>% 
+  summarise(n=sum(Add_to_cart))  %>% arrange(Month)
+
+mes= mes %>% group_by(Month)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=Month,y=n,fill=Source,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="Month",y="Total",title="Total Add to cart por medio")+
+  scale_x_discrete(limit=c('Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'))  
+
+ggplotly(mess)
+
+
+```
+
+
+
+Dia {data-navmenu="Add to cart-Medio"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(dia_compra,Source) %>% 
+  summarise(n=sum(Add_to_cart))  %>% arrange(dia_compra)
+
+mes= mes %>% group_by(dia_compra)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=dia_compra,y=n,fill=Source,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="D?a del mes",y="Total",title="Total Add to cart por medio")
+
+ggplotly(mess)
+
+
+```
+
+
+Dia de la semana {data-navmenu="Add to cart-Medio"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(dia_semana_compra,Source) %>% 
+  summarise(n=sum(Add_to_cart))  %>% arrange(dia_semana_compra)
+
+mes= mes %>% group_by(dia_semana_compra)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=dia_semana_compra,y=n,fill=Source,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="D?a de la semana",y="Total",title="Total Add to cart por medio")+
+  scale_x_discrete(limit=c('lun','mar','mi?','jue','vie','s?b','dom'))  
+
+ggplotly(mess)
+
+
+```
+
+
+Historico {data-navmenu="Add to cart-Ad_content"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+can=df %>% group_by(Date, Ad_content) %>% summarise(n=sum(Add_to_cart))
+
+
+ca=ggplot(can, aes(x=Date,y=n, fill=Ad_content)) + labs(x="Date",y="N?mero de add to cart",title="Add to cart Mar - Jun 2019")+
+  geom_bar(stat="identity")+theme_minimal()+theme(legend.position = 'none')
+
+
+ggplotly(ca)
+
+```
+
+
+Mes {data-navmenu="Add to cart-Ad_content"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(Month,Ad_content) %>% 
+  summarise(n=sum(Add_to_cart))  %>% arrange(Month)
+
+mes= mes %>% group_by(Month)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=Month,y=n,fill=Ad_content,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="Month",y="Total",title="Total Add to cart por add content")+
+  scale_x_discrete(limit=c('Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'))  
+
+ggplotly(mess)
+
+
+```
+
+
+
+Dia {data-navmenu="Add to cart-Ad_content"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(dia_compra,Ad_content) %>% 
+  summarise(n=sum(Add_to_cart))  %>% arrange(dia_compra)
+
+mes= mes %>% group_by(dia_compra)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=dia_compra,y=n,fill=Ad_content,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="D?a del mes",y="Total",title="Total Add to cart por ad content")
+
+ggplotly(mess)
+
+
+```
+
+
+Dia de la semana {data-navmenu="Add to cart-Ad_content"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(dia_semana_compra,Ad_content) %>% 
+  summarise(n=sum(Add_to_cart))  %>% arrange(dia_semana_compra)
+
+mes= mes %>% group_by(dia_semana_compra)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=dia_semana_compra,y=n,fill=Ad_content,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="D?a de la semana",y="Total",title="Total Add to cart por add content")+
+  scale_x_discrete(limit=c('lun','mar','mi?','jue','vie','s?b','dom'))  
+
+ggplotly(mess)
+
+
+```
+
+
+
+Historico {data-navmenu="Sesiones-Medio"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+can=df %>% group_by(Date, Source) %>% summarise(n=sum(Sesiones))
+
+
+ca=ggplot(can, aes(x=Date,y=n, fill=Source)) + labs(x="Date",y="N?mero de sesiones",title="Sesiones Mar - Jun 2019")+
+  geom_bar(stat="identity")+theme_minimal()
+
+
+ggplotly(ca)
+
+```
+
+
+Mes {data-navmenu="Sesiones-Medio"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+mes=df %>% group_by(Month,Source) %>% 
+  summarise(n=sum(Sesiones))  %>% arrange(Month)
+
+mes= mes %>% group_by(Month)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=Month,y=n,fill=Source,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="Month",y="Total",title="Sesiones por medio")+
+  scale_x_discrete(limit=c('Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'))  
+
+ggplotly(mess)
+
+
+```
+
+
+
+Dia {data-navmenu="Sesiones-Medio"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(dia_compra,Source) %>% 
+  summarise(n=sum(Sesiones))  %>% arrange(dia_compra)
+
+mes= mes %>% group_by(dia_compra)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=dia_compra,y=n,fill=Source,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="D?a del mes",y="Total",title="Sesiones por medio")
+
+ggplotly(mess)
+
+
+```
+
+
+Dia de la semana {data-navmenu="Sesiones-Medio"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(dia_semana_compra,Source) %>% 
+  summarise(n=sum(Sesiones))  %>% arrange(dia_semana_compra)
+
+mes= mes %>% group_by(dia_semana_compra)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=dia_semana_compra,y=n,fill=Source,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="D?a de la semana",y="Total",title="Sesiones por medio")+
+  scale_x_discrete(limit=c('lun','mar','mi?','jue','vie','s?b','dom'))  
+
+ggplotly(mess)
+
+
+```
+
+
+Historico {data-navmenu="Sesiones-Ad_content"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+can=df %>% group_by(Date, Ad_content) %>% summarise(n=sum(Sesiones))
+
+
+ca=ggplot(can, aes(x=Date,y=n, fill=Ad_content)) + labs(x="Date",y="N?mero de sesiones",title="Sesiones Mar - Jun 2019")+
+  geom_bar(stat="identity")+theme_minimal()+theme(legend.position = 'none')
+
+
+ggplotly(ca)
+
+```
+
+Mes {data-navmenu="Sesiones-Ad_content"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(Month,Ad_content) %>% 
+  summarise(n=sum(Sesiones))  %>% arrange(Month)
+
+mes= mes %>% group_by(Month)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=Month,y=n,fill=Ad_content,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="Month",y="Total",title="Sesiones por add content")+
+  scale_x_discrete(limit=c('Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'))  
+
+ggplotly(mess)
+
+
+```
+
+
+
+Dia {data-navmenu="Sesiones-Ad_content"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(dia_compra,Ad_content) %>% 
+  summarise(n=sum(Sesiones))  %>% arrange(dia_compra)
+
+mes= mes %>% group_by(dia_compra)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=dia_compra,y=n,fill=Ad_content,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="D?a del mes",y="Total",title="Sesiones por ad content")
+
+ggplotly(mess)
+
+
+```
+
+
+Dia de la semana {data-navmenu="Sesiones-Ad_content"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(dia_semana_compra,Ad_content) %>% 
+  summarise(n=sum(Sesiones))  %>% arrange(dia_semana_compra)
+
+mes= mes %>% group_by(dia_semana_compra)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=dia_semana_compra,y=n,fill=Ad_content,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="D?a de la semana",y="Total",title="Sesiones por add content")+
+  scale_x_discrete(limit=c('lun','mar','mi?','jue','vie','s?b','dom'))  
+
+ggplotly(mess)
+
+
+```
+
+
+
+Historico {data-navmenu="CR-Ad_content"}
+=====================================
+
+### CR(Add_to_cart/Sesiones) por Ad_content
+
+```{r, echo=FALSE}
+
+can=df %>% group_by(Date, Ad_content) %>% summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100)
+
+
+ca=ggplot(can, aes(x=Date,y=n, fill=Ad_content)) + labs(x="Date",y="CR",title="CR por ad content Mar - Jun 2019")+
+  geom_bar(stat="identity")+theme_minimal()+theme(legend.position = 'none')
+
+
+ggplotly(ca)
+
+```
+
+Mes {data-navmenu="CR-Ad_content"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(Month,Ad_content) %>% summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100)  %>% arrange(Month)
+
+mes= mes %>% group_by(Month)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=Month,y=n,fill=Ad_content,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="Month",y="CR",title="CR por add content")+
+  scale_x_discrete(limit=c('Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'))  
+
+ggplotly(mess)
+
+
+```
+
+
+
+Dia {data-navmenu="CR-Ad_content"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(dia_compra,Ad_content) %>% summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100)  %>% arrange(dia_compra)
+
+mes= mes %>% group_by(dia_compra)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=dia_compra,y=n,fill=Ad_content,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="D?a del mes",y="CR",title="CR por ad content")
+
+ggplotly(mess)
+
+
+```
+
+
+Dia de la semana {data-navmenu="CR-Ad_content"}
+=====================================
+
+
+```{r, echo=FALSE}
+
+
+
+mes=df %>% group_by(dia_semana_compra,Ad_content) %>% summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100)  %>% arrange(dia_semana_compra)
+
+mes= mes %>% group_by(dia_semana_compra)%>%   mutate(Participacion=round((n/sum(n))*100,2))
+
+
+mess=ggplot(mes,aes(x=dia_semana_compra,y=n,fill=Ad_content,label = paste0(Participacion, "%")))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(x="D?a de la semana",y="CR",title="CR por add content")+
+  scale_x_discrete(limit=c('lun','mar','mi?','jue','vie','s?b','dom'))  
+
+ggplotly(mess)
+
+
+```
+
+
+
+
+
+
+
+Add to cart {data-navmenu="Heatmaps"}
+=====================================
+  
+  
+### Add to cart
+  
+```{r, echo=FALSE}
+
+
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>% summarise(n=sum(Add_to_cart)) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = n)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Add to cart, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+
+
+
+Sesiones {data-navmenu="Heatmaps"}
+=====================================
+  
+  
+### Sesiones
+  
+```{r, echo=FALSE}
+
+
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>% summarise(n=sum(Sesiones)) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = n)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Sesiones, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+
+CR {data-navmenu="Heatmaps"}
+=====================================
+  
+  
+### CR (Add to cart/sesiones)
+  
+```{r, echo=FALSE}
+
+
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>% summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = n)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Sesiones, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+
+Facebook {data-navmenu="Add to cart-Medio"}
+====================================================
+
+
+### Facebook
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='facebook') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = add)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Add to cart, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Google {data-navmenu="Add to cart-Medio"}
+====================================================
+
+
+### Google
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='google') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = add)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Add to cart, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Mediamath {data-navmenu="Add to cart-Medio"}
+====================================================
+
+
+### Mediamath
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='mediamath') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = add)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Add to cart, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Peoplemedia {data-navmenu="Add to cart-Medio"}
+====================================================
+
+
+### Peoplemedia
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='peoplemedia') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = add)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Add to cart, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Teads {data-navmenu="Add to cart-Medio"}
+====================================================
+
+
+### Teads
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='teads') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = add)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Add to cart, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+
+Youtube {data-navmenu="Add to cart-Medio"}
+====================================================
+
+
+### Youtube
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='youtube') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = add)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Add to cart, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+
+
+
+Facebook {data-navmenu="Sesiones-Medio"}
+====================================================
+
+
+### Facebook
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='facebook') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = ses)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Sesiones, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Google {data-navmenu="Sesiones-Medio"}
+====================================================
+
+
+### Google
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='google') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = ses)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Sesiones, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Mediamath {data-navmenu="Sesiones-Medio"}
+====================================================
+
+
+### Mediamath
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='mediamath') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = ses)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Sesiones, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Peoplemedia {data-navmenu="Sesiones-Medio"}
+====================================================
+
+
+### Peoplemedia
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='peoplemedia') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = ses)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Sesiones, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Teads {data-navmenu="Sesiones-Medio"}
+====================================================
+
+
+### Teads
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='teads') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = ses)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Sesiones, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+
+Youtube {data-navmenu="Sesiones-Medio"}
+====================================================
+
+
+### Youtube
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='youtube') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = ses)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("Sesiones, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+
+
+Facebook {data-navmenu="CR-Medio"}
+====================================================
+
+
+### Facebook
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='facebook') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = n)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("CR, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Google {data-navmenu="CR-Medio"}
+====================================================
+
+
+### Google
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='google') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = n)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("CR, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Mediamath {data-navmenu="CR-Medio"}
+====================================================
+
+
+### Mediamath
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='mediamath') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = n)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("CR, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Peoplemedia {data-navmenu="CR-Medio"}
+====================================================
+
+
+### Peoplemedia
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='peoplemedia') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = n)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("CR, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+Teads {data-navmenu="CR-Medio"}
+====================================================
+
+
+### Teads
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='teads') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = n)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("CR, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+
+Youtube {data-navmenu="CR-Medio"}
+====================================================
+
+
+### Youtube
+  
+```{r, echo=FALSE}
+dat=df %>% group_by(Month,monthf,monthweek_compra,dia_purchase,
+                    dia_semana_compra) %>%filter(Source=='youtube') %>%  summarise(ses=sum(Sesiones),add=sum(Add_to_cart),n=(add/ses)*100) %>%
+                      arrange(dia_purchase)
+
+
+# Now for the plot
+P<- ggplot(na.omit(dat), aes(monthweek_compra, (reorder(dia_semana_compra,dia_purchase)), fill = n)) + 
+  geom_tile(colour = "white")+ facet_grid(~ reorder(monthf,Month))+ scale_fill_gradient2(low = "white",high = "blue") +
+  ggtitle("CR, Mar-Jun 2019") +  xlab("\n\nWeek of the month")+  ylab("\n\nWeekday") 
+
+ggplotly(P)
+
+```
+
+
+
+

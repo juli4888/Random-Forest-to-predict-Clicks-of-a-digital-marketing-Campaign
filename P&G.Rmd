@@ -1,0 +1,656 @@
+---
+title: "Modelamiento estadístico de Clicks, Mediamath y Facebook, P&G"
+author: "Juliana Forero"
+date: "2019, Mayo"
+output: html_document
+fig_width: 10 
+fig_height: 6 
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 500)
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(reshape2)
+library(ggthemes)
+library(ggrepel)
+library(RColorBrewer)
+library(ChannelAttribution)
+library(markovchain)
+library(visNetwork)
+library(expm)
+library(stringr)
+library(purrrlyr)
+library(dplyr)
+library(stringr)
+library(expm)
+#library(xlsx)
+library(openxlsx)
+library(readxl)
+library(kableExtra)
+library(plotly)
+library(car)
+
+setwd("C:/Users/juliana.forero/Desktop/PG")
+
+```
+
+Este reporte se basa en la data recogida durante el período Marzo-Mayo/2019 de los resultados de las campañas para P&G en los medios Mediamath y Facebook. El objetivo es encontrar cuales son las variables que más influyen en el número de clicks. Dado que para ambos medios se tienen variables distintas y que al unirlas se llega al problema de datos faltantes, la imputación no se recomienda pues más del 80% de la información en algunas variables hace falta e imputar significaría una disminución en la calidad de los datos.
+
+
+Es así como se trabajan ambos medios por separado y se pretende ajustar un modelo estadístico para cada caso.
+
+
+
+## Análisis descriptivo: Facebook
+
+## Variables numéricas
+
+```{r, echo=FALSE, warning=FALSE, fig.width = 10}
+
+
+conv = read_excel("Facebook.xlsx", sheet = 1) %>%  tbl_df()
+
+conv <- conv %>% filter(Gender!= 'unknown')
+
+conv$Gender <- as.factor(conv$Gender)
+conv$Age <- as.factor(conv$Age)
+conv$Ad_name <- as.factor(conv$Ad_name)
+conv$Impressions <- as.numeric(conv$Impressions)
+conv$clicks <- as.numeric(conv$clicks)
+conv$Cost <- as.numeric(conv$Cost)
+conv$Reach <- as.numeric(conv$Reach)
+
+
+#daily_data = read.csv('day.csv', header=TRUE, stringsAsFactors=FALSE)
+#conv$Date = as.Date(conv$start_date)
+
+#ggplot(conv, aes(Date, clicks)) + geom_line() + scale_x_date('month')  + ylab("Daily Bike Checkouts") +
+ # xlab("")
+
+
+can=conv %>% group_by(Date) %>% summarise(clicks=sum(clicks))
+
+
+ca=ggplot(can, aes(x=Date,y=clicks, fill=Date)) + labs(x="Date",y="Número de clicks",title="Clicks Marzo - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+theme(legend.position = 'none')
+
+
+ggplotly(ca)
+
+#########Grafico variable respuesta vs demas
+
+#par(mfrow=c(2,2))
+
+p <- plot_ly(data = conv, x = ~Cost, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del costo')
+p
+
+p <- plot_ly(data = conv, x = ~Reach, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del Reach');p
+
+p <- plot_ly(data = conv, x = ~Impressions, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función de las Impresiones ');p
+
+#plot_ly(conv, x = ~Cost, y = ~clicks, name = 'trace 0', type = 'scatter', mode = 'markers') %>%
+#  add_trace(x = ~Reach, name = 'trace 1', mode = 'markers') %>%
+ # add_trace(x = ~Impressions, name = 'trace 2', mode = 'markers')
+
+```
+
+## Variables categóricas
+
+
+
+```{r, echo=FALSE, fig.width = 8}
+
+
+p<-ggplot(conv, aes(x=Gender, y=clicks, color=Gender)) + geom_boxplot()+ labs(title="Clicks por Género")+ theme_minimal()
+ggplotly(p)
+
+p<-ggplot(conv, aes(x=Age, y=clicks, color=Age)) + geom_boxplot()+ labs(title="Clicks por Edad")+theme_minimal()
+ggplotly(p)
+
+
+#p<-ggplot(conv, aes(x=Ad_name, y=clicks)) + geom_boxplot()+ labs(title="Clicks por Ad")+coord_flip()
+#ggplotly(p)
+
+#can=conv %>% group_by(Ad_name) %>% summarise(clicks=sum(clicks))
+
+#ca=ggplot(conv, aes(x=Ad_name,y=clicks, fill=Ad_name)) + labs(x="Date",y="Número de clicks",title="Clicks por tipo de Ad")+
+ # geom_bar(stat="identity")+theme_minimal()+coord_flip()+theme(legend.position = 'none')
+
+
+#ggplotly(ca)
+
+a<-ggplot(conv, aes(x = Gender, y = clicks, fill = Gender, color=Gender)) + geom_boxplot() +
+facet_wrap(~ Age, ncol=6)+
+  labs(title="Clicks por género y edad",x="Gender", y = "clicks")+ theme_classic()
+
+ggplotly(a)
+```
+
+
+## Planteamiento del modelo
+
+Analizando la data y la naturaleza de las variables en primera instancia se propuso un modelo lineal generalizado con respuesta Poisson, pues las impresiones y los clicks son variables de tipo conteo; sin embargo estas presentan varios valores en cero, con lo cual sacarles logaritmo no funcionaba y el valor del criterio de selección del mejor modelo AIC daba en cualquier caso para esta función de enlace un valor muy alto.
+
+
+Al proponer un modelo con respuesta Gaussiana y función de enlace identidad, se observa que se ajusta mucho mejor, esto puede deberse a la buena cantidad de datos de la cual se dispone, que tiende a ajustarse mejor a una distribución normal.
+
+## Glm con respuesta Poisson y función de enlace logaritmo
+
+```{r, echo=FALSE}
+
+#conv = read_excel("Facebook.xlsx", sheet = 1) %>%  tbl_df()
+
+#conv <- conv %>% filter(Gender!= 'unknown')
+#%>% select(-Date) %>% select(-Ad_set_name) %>% select(-Campaign_name)
+
+
+
+fit <- glm(clicks ~ 1+Ad_name+Gender+Age+Cost+Reach+
+             Impressions, data=conv,
+           family=poisson(link="log"))
+
+AIC(fit)
+
+summary(fit)
+
+#qqplot(fit)
+
+```
+
+Se observa como para este modelo la variable impresiones no es significativa. El AIC para este modelo es de 661298.
+
+## Glm con respuesta normal y función de enlace identidad
+
+```{r, echo=FALSE}
+
+#conv = read_excel("Facebook.xlsx", sheet = 1) %>%  tbl_df()
+
+#conv <- conv %>% filter(Gender!= 'unknown')
+#%>% select(-c(Date,Ad_set_name,Campaign_name))
+
+conv$Gender <- as.factor(conv$Gender)
+conv$Age <- as.factor(conv$Age)
+conv$Ad_name <- as.factor(conv$Ad_name)
+conv$Impressions <- as.numeric(conv$Impressions)
+conv$clicks <- as.numeric(conv$clicks)
+conv$Cost <- as.numeric(conv$Cost)
+conv$Reach <- as.numeric(conv$Reach)
+
+
+fit <- glm(clicks ~ 1+Ad_name+Gender+Age+Cost+Reach+
+             Impressions, data=conv,
+           family=gaussian(link="identity"))
+
+AIC(fit)
+
+summary(fit)
+
+#qqplot(fit)
+
+```
+
+Para el modelo con respuesta gaussiana las impresiones si son significativas para la variable clicks. El AIC para este modelo es menor que para el modelo con respuesta Poisson (311370.7).
+
+## Regresión lineal: Clicks ~ Género
+
+Se muestra el modelo de regresión lineal para la variable respuesta Clicks en función del Género para ver si existen diferencias entre hombres y mujeres en cuanto al número de clicks.
+
+```{r}
+
+# Compute the model
+model <- lm(clicks ~ Gender, data = conv)
+summary(model)$coef
+```
+
+Del resultado anterior se concluye, que el promedio de clicks para las mujeres se estima en 29.79, mientras que para los hombres se tiene una estimación de 29.79107 - 18.58361 = 11.20746 clicks. 
+
+El p-valor para la variable dummy género=male es muy significativa, sugiriendo que existe evidencia estadística suficiente para afirmar que hay una diferencia en el promedio de clicks para los dos géneros (mujeres y hombres).
+
+El hecho de que el coeficiente estimado en la regresión para el género de los hombres sea negativo indica que ser hombre en este caso está asociado con la disminución en el número de clicks (relativo a las mujeres).
+
+
+## Regresión lineal: Clicks ~ Edad
+
+Se muestra el modelo de regresión lineal para la variable respuesta Clicks en función de la edad para ver si existen diferencias en cuanto al número de clicks.
+
+```{r}
+
+# Compute the model
+model <- lm(clicks ~ Age, data = conv)
+summary(model)$coef
+```
+
+Del resultado anterior se concluye, que el mayor número promedio de clicks se encontró entre las personas de los 55 a los 64 años con un valor de 15.09+15.40= 30.49 clicks, seguido de las personas entre los 13 y los 24 años con un promedio de 15.09 clicks, mientras que para las personas mayores de 65 años se tiene una estimación de 15.09 + 1.43 = 16.52 clicks. 
+
+El p-valor para la variable dummy edad=55-64 es muy significativa, sugiriendo que existe evidencia estadística suficiente para afirmar que hay una diferencia en el promedio de clicks entre las personas jóvenes y las personas mayores.
+
+
+## Regresión lineal: Clicks ~ Ad (campaña)
+
+Se muestra el modelo de regresión lineal para la variable respuesta Clicks en función de la camapaña.
+
+```{r}
+
+# Compute the model
+model <- lm(clicks ~ Ad_name, data = conv)
+summary(model)$coef
+```
+
+Del resultado anterior se concluye, que el mayor número promedio de clicks se encontró en la campaña con el Ad : "Ad_namefebreze-awareness-fb-plc-emo-linkad6gif" con un valor de 746.66+54.43= 801.09 clicks.
+
+
+## Modelo sugerido por Backward y Forward
+
+```{r, echo=FALSE}
+
+
+### Modelo con todas las variables
+modelo1<- lm(clicks ~ Ad_name+Gender+Age+Cost+Reach+
+               Impressions, data=conv)
+Anova(modelo1)
+
+```
+
+Luego de realizar los procedimientos backward y forward se encontró que el mejor modelo que se ajusta a estos datos es el modelo completo con un AIC de 210425.4 con un R^2 ajustado del 93,35%. Cabe resaltar que se deben verificar los supuestos del modelo y ver si la interacción entre género y edad es significativa.
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Análisis descriptivo: Mediamath
+
+## Variables numéricas
+
+```{r, echo=FALSE, warning=FALSE, fig.width = 9}
+
+
+conv = read_excel("Mediamath.xlsx", sheet = 1) %>%  tbl_df()
+
+
+conv$campaign_name <- as.factor(conv$campaign_name)
+conv$strategy_name <- as.factor(conv$strategy_name)
+conv$impressions <- as.numeric(conv$impressions)
+conv$clicks <- as.numeric(conv$clicks)
+conv$total_conversions <- as.numeric(conv$total_conversions)
+conv$total_spend <- as.numeric(conv$total_spend)
+conv$total_spend_cpm <- as.numeric(conv$total_spend_cpm)
+conv$total_spend_cpa <- as.numeric(conv$total_spend_cpa)
+conv$total_spend_cpc <- as.numeric(conv$total_spend_cpc)
+conv$ctc <- as.numeric(conv$ctc)
+conv$ctr <- as.numeric(conv$ctr)
+
+
+#daily_data = read.csv('day.csv', header=TRUE, stringsAsFactors=FALSE)
+#conv$Date = as.Date(conv$start_date)
+
+#ggplot(conv, aes(Date, clicks)) + geom_line() + scale_x_date('month')  + ylab("Daily Bike Checkouts") +
+ # xlab("")
+
+
+can=conv %>% group_by(start_date) %>% summarise(clicks=sum(clicks))
+
+
+ca=ggplot(can, aes(x=start_date,y=clicks, fill=start_date)) + labs(x="Date",y="Número de clicks",title="Clicks Abril - Mayo 2019")+
+  geom_bar(stat="identity")+theme_minimal()+theme(legend.position = 'none')
+
+
+ggplotly(ca)
+
+#########Grafico variable respuesta vs demas
+
+#par(mfrow=c(2,2))
+
+p <- plot_ly(data = conv, x = ~total_spend, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del costo');p
+
+p <- plot_ly(data = conv, x = ~total_conversions, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función de las conversiones');p
+
+p <- plot_ly(data = conv, x = ~impressions, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función de las Impresiones ');p
+
+
+p <- plot_ly(data = conv, x = ~total_spend_cpm, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del costo de cpm');p
+
+p <- plot_ly(data = conv, x = ~total_spend_cpa, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del costo de cpa');p
+
+p <- plot_ly(data = conv, x = ~total_spend_cpc, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del costo de cpc');p
+
+p <- plot_ly(data = conv, x = ~ctc, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del ctc');p
+
+p <- plot_ly(data = conv, x = ~ctr, y = ~clicks, type = 'scatter', mode = 'markers')%>%
+  layout(title = 'Clicks en función del ctr');p
+
+#plot_ly(conv, x = ~Cost, y = ~clicks, name = 'trace 0', type = 'scatter', mode = 'markers') %>%
+#  add_trace(x = ~Reach, name = 'trace 1', mode = 'markers') %>%
+ # add_trace(x = ~Impressions, name = 'trace 2', mode = 'markers')
+
+```
+
+## Variables categóricas
+
+```{r, echo=FALSE, fig.width = 8}
+
+
+p<-ggplot(conv, aes(x=campaign_name, y=clicks, color=campaign_name)) + geom_boxplot()+ labs(title="Clicks por tipo de campaña")+theme_minimal()
+ggplotly(p)
+
+p<-ggplot(conv, aes(x=strategy_name, y=clicks, color=strategy_name)) + geom_boxplot()+ labs(title="Clicks por tipo de estrategia")+coord_flip()+theme_minimal()
+ggplotly(p)
+
+
+#p<-ggplot(conv, aes(x=Ad_name, y=clicks)) + geom_boxplot()+ labs(title="Clicks por Ad")+coord_flip()
+#ggplotly(p)
+
+#can=conv %>% group_by(Ad_name) %>% summarise(clicks=sum(clicks))
+
+#ca=ggplot(conv, aes(x=Ad_name,y=clicks, fill=Ad_name)) + labs(x="Date",y="Número de clicks",title="Clicks por tipo de Ad")+
+ # geom_bar(stat="identity")+theme_minimal()+coord_flip()+theme(legend.position = 'none')
+
+
+#ggplotly(ca)
+
+```
+
+## CTR por Estrategia
+
+```{r, echo=FALSE, fig.width = 8}
+
+p<-ggplot(conv, aes(x=strategy_name, y=ctr, color=strategy_name)) + geom_boxplot()+ labs(title="CTR por tipo de estrategia")+coord_flip()
+ggplotly(p)
+
+```
+
+
+## Planteamiento del modelo
+
+Analizando la data y la naturaleza de las variables en primera instancia se propuso un modelo lineal generalizado con respuesta Poisson, pues las impresiones y los clicks son variables de tipo conteo; sin embargo estas presentan varios valores en cero, con lo cual sacarles logaritmo no funcionaba y el valor del criterio de selección del mejor modelo AIC daba en cualquier caso para esta función de enlace un valor muy alto.
+
+
+Al proponer un modelo con respuesta Gaussiana y función de enlace identidad, se observa que se ajusta mucho mejor, esto puede deberse a la buena cantidad de datos de la cual se dispone, que tiende a ajustarse mejor a una distribución normal.
+
+## Glm con respuesta Poisson y función de enlace logaritmo
+
+```{r, echo=FALSE}
+
+#conv = read_excel("Facebook.xlsx", sheet = 1) %>%  tbl_df()
+
+#conv <- conv %>% filter(Gender!= 'unknown')
+#%>% select(-Date) %>% select(-Ad_set_name) %>% select(-Campaign_name)
+
+
+
+fit <- glm(clicks ~ 1+total_conversions+
+               total_spend_cpc+ctc+ctr+impressions+
+               total_spend_cpm+total_spend_cpa+total_spend+
+               campaign_name+strategy_name, data=conv,
+           family=poisson(link="log"))
+
+AIC(fit)
+
+summary(fit)
+
+#qqplot(fit)
+
+```
+
+El AIC del modelo con respuesta Poisson es 8232.059
+
+## Glm con respuesta normal y función de enlace identidad
+
+```{r, echo=FALSE}
+
+#conv = read_excel("Facebook.xlsx", sheet = 1) %>%  tbl_df()
+
+#conv <- conv %>% filter(Gender!= 'unknown')
+#%>% select(-c(Date,Ad_set_name,Campaign_name))
+
+
+
+fit <- glm(clicks ~ 1+total_conversions+
+               total_spend_cpc+ctc+ctr+impressions+
+               total_spend_cpm+total_spend_cpa+total_spend+
+               campaign_name+strategy_name, data=conv,
+           family=gaussian(link="identity"))
+
+AIC(fit)
+
+summary(fit)
+
+#qqplot(fit)
+
+```
+
+Para el modelo con respuesta gaussiana solo resultan significativas las variables impresiones y gasto total. El AIC para este modelo es menor que para el modelo con respuesta Poisson (3017.613), pero esto no quiere decir que sea un mejor modelo.
+
+## Regresión lineal: Clicks ~ Campaña
+
+Se muestra el modelo de regresión lineal para la variable respuesta Clicks en función del tipo de campaña.
+
+```{r}
+
+# Compute the model
+model <- lm(clicks ~ campaign_name, data = conv)
+summary(model)$coef
+```
+
+
+
+## Regresión lineal: Clicks ~ Estrategia
+
+Se muestra el modelo de regresión lineal para la variable respuesta Clicks en función del tipo de estrategia.
+
+```{r}
+
+# Compute the model
+model <- lm(clicks ~ strategy_name, data = conv)
+summary(model)$coef
+```
+
+
+
+## Modelo sugerido por Backward y Forward
+
+```{r}
+
+
+### Modelo con todas las variables
+modelo1<- lm(clicks ~ total_spend_cpc+impressions+
+               total_spend_cpm+total_spend, data=conv)
+Anova(modelo1)
+
+```
+
+Luego de realizar los procedimientos backward y forward se encontró que el mejor modelo que se ajusta a estos datos es el modelo completo con un AIC de 2312 con un R^2 ajustado del 76,48%. 
+
+
+## Facebook y Mediamath
+
+## Clicks en función del Costo total
+
+
+```{r, include=FALSE}
+require(flexdashboard);require(readxl);require(dplyr);require(stats);require(lubridate);require(knitr);require(plotly);require(MASS);require(DT);require(writexl)
+
+Data1 = read_excel("base.xlsx", sheet = 2) %>%  tbl_df()
+
+
+Data1$start_date = as.Date(Data1$start_date)
+Data = Data1 %>% group_by(start_date,Channel) %>% summarise(Impressions=sum(impressions,na.rm=T),clicks=sum(clicks,na.rm=T),Conversions=sum(total_conversions,na.rm=T),Cost=sum(total_spend,na.rm=T))
+```
+
+
+
+
+###Histórico: Clicks 
+
+```{r, echo=FALSE, warning=FALSE}
+#plot_ly(Data1, x = ~start_date, color = ~Channel) %>%
+ # add_lines(y = ~clicks, text = ~ start_date)
+
+#diamonds1 <- Data1[which(Data1$Channel == "Facebook"),]
+#density1 <- density(diamonds1$clicks)
+
+#diamonds2 <- Data1[which(Data1$Channel == "Mediamath"),]
+#density2 <- density(diamonds2$clicks)
+
+#p <- plot_ly(x = ~density1$x, y = ~density1$y, type = 'scatter', mode = 'lines', name = 'Facebook', fill = 'Mediamath') %>%
+ # add_trace(x = ~density2$x, y = ~density2$y, name = 'Mediamath', fill = 'tozeroy') %>%
+ # layout(xaxis = list(title = 'Clicks'),
+  #       yaxis = list(title = 'Density'))
+
+#p
+
+#ca=ggplot(can, aes(x=start_date,y=clicks, fill=Channel)) + labs(x="Fecha",y="Número de clicks",title="Clicks Marzo - Mayo 2019")+
+#  geom_bar(stat="identity")+theme_minimal()
+
+
+#ggplotly(ca)
+
+
+can=Data1 %>% group_by(start_date,Channel) %>% summarise(clicks=sum(clicks))
+
+ca=ggplot(can, aes(x=start_date,y=clicks, fill=Channel)) + labs(x="Fecha",y="Número de clicks",title="Clicks Marzo - Mayo 2019")+
+  geom_area(stat ="identity", alpha=0.6) +
+  theme_classic()
+
+ggplotly(ca)
+
+```
+
+
+###Histórico: Gasto total 
+
+```{r, echo=FALSE, warning=FALSE}
+
+can=Data1 %>% group_by(start_date,Channel) %>% summarise(total_spend=sum(total_spend))
+
+
+ca=ggplot(can, aes(x=start_date,y=total_spend, fill=Channel)) + labs(x="Fecha",y="Gasto",title="Gasto total Marzo - Mayo 2019")+
+  geom_area(stat ="identity", alpha=0.6) +theme_minimal()
+
+ggplotly(ca)
+
+```
+
+###Histórico: Impresiones
+
+```{r, echo=FALSE, warning=FALSE}
+
+can=Data1 %>% group_by(start_date,Channel) %>% summarise(impressions=sum(impressions))
+
+
+ca=ggplot(can, aes(x=start_date,y=impressions, fill=Channel)) + labs(x="Fecha",y="Impresiones",title="Impresiones Marzo - Mayo 2019")+
+  geom_area(stat ="identity", alpha=0.6) +theme_minimal()+
+  scale_y_continuous(labels = scales::comma)
+
+ggplotly(ca)
+
+```
+
+### Gráficos de dispersión
+
+```{r, echo=FALSE, warning=FALSE}
+
+plot_ly(Data1, x = ~total_spend, color = ~Channel) %>%
+  add_markers(y = ~clicks, text = ~ start_date) %>%
+  layout(title = 'Clicks en función del costo')
+
+plot_ly(Data1, x = ~total_spend, color = ~Channel) %>%
+  add_markers(y = ~impressions, text = ~ start_date) %>%
+  layout(title = 'Impresiones en función del costo')
+
+```
+
+
+###Especificación del modelo de regresión lineal
+
+$$\begin{equation*}
+\left\lbrace
+\begin{array}{l}
+y_k^\hat{\lambda} = \mu_k + \epsilon_k\\
+\mu_k = \beta_1 x_{k1} + \beta_2 x_{k2} + \beta_3 x_{k3} + \beta_4 x_{k1} x_{k2} + \beta_5 x_{k1} x_{k3}\\
+\epsilon_k \sim N(0,\sigma^2)\\
+\epsilon_1,...., \epsilon_n  \textit{ independientes}
+\end{array}
+\right.
+\end{equation*}$$
+
+$$ Y_k: \textit{clicks del k-esimo dia }\\
+\hat{\lambda}:\textit{ transformacion de Box Cox}\\
+X_{k1}: \textit{ Gasto en el dia k}\\
+X_{k2}: \left\lbrace
+\begin{array}{l}
+1 \textit{ Si el medio del dia k es Google Mediamath}\\
+0 \textit{ en otro caso}\\
+\end{array}
+\right. \\
+X_{k3} \left\lbrace
+\begin{array}{l}
+1 \textit{ Si el medio del dia k es Facebook}\\
+0 \textit{ en otro caso}\\
+\end{array}
+\right. \\ $$
+
+
+###Estimación del modelo, R^2 = 0.9912
+
+```{r, echo=FALSE, warning=FALSE}
+fitC=lm(Data[-which(Data$clicks==0),],formula=clicks~-1+Cost+Channel+Cost*Channel)
+bc = boxcox(fitC);bcC = bc$x[which.max(bc$y)]
+fitC=lm(Data,formula=clicks^bcC~-1+Cost+Channel+Cost*Channel)
+kable(summary(fitC)$coefficients)
+summary(fitC)
+```
+
+
+###Modelo e intervalos de predicción bajo la transformación
+
+```{r, echo=FALSE, warning=FALSE}
+PredC = predict(fitC,interval = 'confidence',level = 0.99)
+colnames(PredC) = paste(colnames(PredC),'C',sep='')
+Data=cbind(data.frame(Data),data.frame(PredC))
+
+plot_ly(Data, x = ~Cost, color = ~Channel) %>%
+  add_markers(y = ~clicks^bcC, text = ~ start_date) %>% 
+  add_lines(y = ~ fitC,name = "Estimated",line = list(color = 'black')) %>%
+  add_ribbons(ymin = ~lwrC,
+              ymax = ~uprC,
+              line = list(color = 'rgba(7, 164, 181, 0.05)'),
+              fillcolor = 'rgba(7, 164, 181, 0.2)',
+              name = "Standard Error", showlegend = T)
+
+```
+
+###Histórico: Clicks con transformación de Box-Cox
+
+```{r, echo=FALSE, warning=FALSE}
+plot_ly(Data, x = ~start_date, color = ~Channel) %>%
+  add_lines(y = ~clicks, text = ~ start_date) %>% 
+  add_ribbons(ymin = ~lwrC^(bcC^-1),
+              ymax = ~uprC^(bcC^-1),
+              line = list(color = 'rgba(7, 164, 181, 0.05)'),
+              fillcolor = 'rgba(7, 164, 181, 0.2)',
+              name = "Standard Error", showlegend = T) 
+```
